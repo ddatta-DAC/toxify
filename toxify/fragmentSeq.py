@@ -6,7 +6,7 @@ def seqFrag(s):
 
     start = random.randint(0,round(lenS/4.5))
     stop = random.randint(round(lenS/1.5),lenS)
-    print((start-stop)/len)
+    print((start-stop)/lenS)
     frag = s[start:stop]
 
     return(frag)
