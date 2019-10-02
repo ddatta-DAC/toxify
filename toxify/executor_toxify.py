@@ -219,7 +219,8 @@ def train_and_test_model(
         test_Y,
         N_units,
         model_dir,
-        epochs
+        epochs,
+        lr
 ):
     output_dimension = train_Y.shape[1]  # Output dimension
     input_dimension = train_X.shape[2]  # Input dimension
@@ -235,7 +236,8 @@ def train_and_test_model(
         N_units=N_units,
         seq_len=seq_len,
         model_dir=model_dir,
-        epochs=epochs
+        epochs=epochs,
+        lr=lr
     )
     model_obj.build()
     model_obj.train(
@@ -403,38 +405,56 @@ def evaluate(
 
 # --------------------------------------- #
 
-def main( maxLen=500, window=15, N_units=150, DATA=2):
-    print(' >>> starting main ')
+def main( CONFIG):
+    print(' >>> Starting main ')
+    maxLen= CONFIG['maxLen']
+    window= CONFIG['window']
+    N_units=CONFIG['N_units']
+    DATA_LOC = CONFIG['data_dir']
+
+    pos_samples_file = os.path.join(
+        DATA_LOC,
+        CONFIG['pos_file'])
+    neg_samples_file = os.path.join(
+        DATA_LOC,
+        CONFIG['neg_file'])
+
+
     # here we are given a list of positive fasta files and a list of negative fasta files
 
-    # Paper uses 500
-    maxLen = maxLen
-    window = window
-    N_units = N_units
     # Paper uses 50 epochs
-    epochs = 50
-    lr = 0.01
+    if 'epochs' in CONFIG.keys():
+        epochs = CONFIG['epochs']
+    else:
+        epochs = 50
 
-    hyperparams = ['data_'+ str(DATA) ,maxLen, window, N_units, epochs]
+    if 'LR' in CONFIG.keys():
+        lr = CONFIG['LR']
+    else:
+        lr = 0.01
+
+    hyperparams = [ maxLen, window, N_units, epochs ]
     str_hyperparams = [str(_) for _ in hyperparams]
     model_signature = 'toxify_' + '_'.join(str_hyperparams)
-    model_dir = os.path.join('./models', 'baseline')
-
+    model_dir = os.path.join('./models', model_signature)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
+    print(' Model signature ::', model_signature)
+
+
+    result_dir = os.path.join(
+        DATA_LOC,'results', model_signature
+    )
+    if not os.path.exists(os.path.join( DATA_LOC,'results')):
+        os.mkdir( os.path.join(DATA_LOC ,'results'))
+
+    if not os.path.exists(os.path.join(DATA_LOC,'results', model_signature)):
+        os.mkdir( os.path.join(DATA_LOC,'results', model_signature) )
+
+
     max_seq_len = maxLen
     window_size = window
-    if DATA == 1:
-        pos_samples_file = './../sequence_data/training_data/pre.venom.csv'
-        neg_samples_file = './../sequence_data/training_data/pre.NOT.venom.csv'
-    elif DATA == 2:
-        pos_samples_file = './../sequence_data/baseline_data/pre.venom.csv'
-        neg_samples_file = './../sequence_data/baseline_data/pre.NOT.venom.csv'
-
-
-    print(os.getcwd())
-    print(os.path.exists(neg_samples_file))
 
 
     cv_folds = 3
@@ -470,7 +490,8 @@ def main( maxLen=500, window=15, N_units=150, DATA=2):
             test_Y,
             N_units,
             model_dir,
-            epochs
+            epochs,
+            lr
         )
         P, R, F1 = evaluate(
             test_seqs_pd,
@@ -481,9 +502,7 @@ def main( maxLen=500, window=15, N_units=150, DATA=2):
         arr_F1.append(F1)
         print('------')
 
-    result_dir = os.path.join(
-        './../baseline_results', model_signature
-    )
+
     result_file = 'results.csv'
 
     if not os.path.exists('./../baseline_results'):
@@ -523,8 +542,34 @@ def main( maxLen=500, window=15, N_units=150, DATA=2):
     return
 
 
-main(maxLen=150, window=15, N_units=150, DATA=2)
-main(maxLen=150, window=0, N_units=270,  DATA=2)
-main(maxLen=500, window=50, N_units=270, DATA=2)
-main(maxLen=500, window=100, N_units=270, DATA=2)
-main(maxLen=500, window=200, N_units=270,  DATA=2)
+# main(maxLen=150, window=15, N_units=150, DATA=2)
+# main(maxLen=150, window=0, N_units=270,  DATA=2)
+# main(maxLen=500, window=50, N_units=270, DATA=2)
+# main(maxLen=500, window=100, N_units=270, DATA=2)
+# main(maxLen=500, window=200, N_units=270,  DATA=2)
+
+# -------------------- #
+
+import argparse
+parser = argparse.ArgumentParser(description='Running toxify ')
+parser.add_argument(
+    '--config',
+    type=str,
+    nargs='?',
+    default='CONFIG.yaml',
+    help='config file'
+)
+
+import yaml
+args = parser.parse_args()
+print(args.config)
+if args.config is not None:
+    # load config
+    conf_file = args.config
+    with open(conf_file,'r') as handle:
+        CONFIG = yaml.safe_load(handle)
+    print(CONFIG)
+    main(CONFIG)
+
+
+
