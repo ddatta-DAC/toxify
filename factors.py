@@ -44,9 +44,11 @@ def atchley(s,h):
     line2write = ""
     for aa in s:
         for factor in factorDict[aa]:
-            line2write += str(factor) +","
+            line2write += str(factor) + ","
     # padding = "NA,"*(500-(len(s)*5))
-    return h+","+line2write
+    return h + "," + line2write
+
+
 def seq2np(s):
     mat = np.zeros(shape=(5,15))
     for factors in range(5):
@@ -55,6 +57,7 @@ def seq2np(s):
             # print(factors,i,aa)
             mat[factors][i] = factorDict[aa][factors]
     return mat
+
 if False:
     seq_list = []
     seq_iter = fasta_iter("training_data/reviewed_subset.NegEuk.fa.window")
